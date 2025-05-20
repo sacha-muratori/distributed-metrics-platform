@@ -1,17 +1,15 @@
 package com.streaming.metrics.dispatcher.aggregated;
 
+import com.streaming.configuration.properties.model.holder.ConfigurationPropertiesHolder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import java.nio.file.*;
+import java.util.stream.Stream;
 
 @Service
 public class AggregatedMetricsDispatcherService {
@@ -20,51 +18,75 @@ public class AggregatedMetricsDispatcherService {
 
     private static final String METRICS_DIR = "metrics";
     private static final String ARCHIVE_DIR = "archive";
-    private static final DateTimeFormatter FILE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmm");
 
-    private final WebClient webClient;
+    @Autowired
+    private WebClient webClient;
 
-    public AggregatedMetricsDispatcherService(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl("http://localhost:8080/api/metrics/").build();
+    @Autowired
+    private ConfigurationPropertiesHolder configurationPropertiesHolder;
+
+    public void dispatchReadyMetrics() {
+        try (Stream<Path> readyFiles = Files.list(Paths.get(METRICS_DIR))
+                .filter(path -> path.toString().endsWith(".ready"))) {
+
+            readyFiles.forEach(this::processReadyFile);
+
+        } catch (IOException e) {
+            log.error("Failed to scan .ready files in {}", METRICS_DIR, e);
+        }
     }
 
-    public void dispatchLastMinuteMetrics() {
-        String targetFileName = "metrics-" + FILE_FORMAT.format(ZonedDateTime.now().minusMinutes(1)) + ".json";
-        Path metricsPath = Paths.get(METRICS_DIR, targetFileName);
+    private void processReadyFile(Path readyFile) {
+        String baseName = readyFile.getFileName().toString().replace(".ready", "");
+        Path jsonFile = Paths.get(METRICS_DIR, baseName + ".json");
+        Path sendingFile = Paths.get(METRICS_DIR, baseName + ".sending");
 
-        if (!Files.exists(metricsPath)) {
-            log.warn("No file found for previous minute: {}", targetFileName);
+        try {
+            Files.move(readyFile, sendingFile, StandardCopyOption.REPLACE_EXISTING);
+        } catch (IOException e) {
+            log.warn("Could not rename .ready to .sending for file: {}", readyFile.getFileName(), e);
+            return;
+        }
+
+        if (!Files.exists(jsonFile)) {
+            log.warn("Missing .json for ready file: {}", jsonFile.getFileName());
+            delete(sendingFile); // remove the renamed flag file
             return;
         }
 
         try {
-            byte[] data = Files.readAllBytes(metricsPath);
+            String url = configurationPropertiesHolder.getMetricsConfigRef().getCollector().getAggregated().getAggregatedUrl();
+            byte[] data = Files.readAllBytes(jsonFile);
 
             webClient.post()
-                    .uri("/aggregated-metrics")
+                    .uri(url)
                     .bodyValue(data)
                     .retrieve()
                     .toBodilessEntity()
                     .doOnSuccess(response -> {
-                        log.info("Sent: {}", targetFileName);
-                        delete(metricsPath);
+                        log.info("Successfully sent: {}", jsonFile.getFileName());
+                        delete(jsonFile);
+                        delete(sendingFile);
                     })
-                    .doOnError(err -> {
-                        log.error("Failed to send: {}", targetFileName, err);
-                        moveToArchive(metricsPath);
+                    .doOnError(error -> {
+                        log.error("Failed to send: {}", jsonFile.getFileName(), error);
+                        moveToArchive(jsonFile);
+                        delete(sendingFile); // we only need .json archived
                     })
                     .subscribe();
 
         } catch (IOException e) {
-            log.error("Error reading file: {}", targetFileName, e);
+            log.error("Error reading metrics file: {}", jsonFile.getFileName(), e);
+            moveToArchive(jsonFile);
+            delete(sendingFile);
         }
     }
 
     private void delete(Path file) {
         try {
-            Files.delete(file);
+            Files.deleteIfExists(file);
         } catch (IOException e) {
-            log.error("Could not delete sent file: {}", file.getFileName(), e);
+            log.error("Could not delete file: {}", file.getFileName(), e);
         }
     }
 
@@ -76,11 +98,7 @@ public class AggregatedMetricsDispatcherService {
             }
             Files.move(file, archiveDir.resolve(file.getFileName()), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            log.error("Failed to move file to archive: {}", file.getFileName(), e);
+            log.error("Failed to archive file: {}", file.getFileName(), e);
         }
-    }
-
-    public WebClient getWebClient() {
-        return webClient;
     }
 }

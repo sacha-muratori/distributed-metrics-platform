@@ -1,35 +1,36 @@
 package com.streaming.metrics.dispatcher.retry;
 
+import com.streaming.configuration.properties.model.holder.ConfigurationPropertiesHolder;
 import com.streaming.metrics.dispatcher.aggregated.AggregatedMetricsDispatcherService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.stream.Stream;
 
 @Service
-public class ArchivedMetricsRetryService {
+public class RetryMetricsDispatcherService {
 
     private final Logger log = LogManager.getLogger(getClass());
 
     private static final Path ARCHIVE_DIR = Paths.get("archive");
 
-    private final AggregatedMetricsDispatcherService dispatcher;
+    @Autowired
+    private WebClient webClient;
 
-    public ArchivedMetricsRetryService(AggregatedMetricsDispatcherService dispatcher) {
-        this.dispatcher = dispatcher;
-    }
+    @Autowired
+    private ConfigurationPropertiesHolder configurationPropertiesHolder;
 
     public void retryArchivedDispatches() {
-        log.debug("Attempting to retry dispatching archived metrics files...");
+        log.debug("Retrying archived dispatches");
 
         if (!Files.exists(ARCHIVE_DIR)) {
-            log.info("Archive directory does not exist. No archived files to retry.");
+            log.info("Archive directory does not exist. Nothing to retry.");
             return;
         }
 
@@ -38,29 +39,29 @@ public class ArchivedMetricsRetryService {
                     .filter(path -> path.toString().endsWith(".json"))
                     .forEach(this::attemptResend);
         } catch (IOException e) {
-            log.error("Error while listing archived files", e);
+            log.error("Error listing archived files", e);
         }
 
-        log.debug("Archived dispatch retry completed");
+        log.debug("Archived retry pass complete.");
     }
 
     private void attemptResend(Path file) {
         try {
+            String url = configurationPropertiesHolder.getMetricsConfigRef().getCollector().getAggregated().getAggregatedUrl();
             byte[] data = Files.readAllBytes(file);
 
-            dispatcher.getWebClient()
-                    .post()
-                    .uri("/aggregated-metrics")
+            webClient.post()
+                    .uri(url)
                     .bodyValue(data)
                     .retrieve()
                     .toBodilessEntity()
                     .doOnSuccess(resp -> {
-                        log.info("Successfully resent: {}", file.getFileName());
+                        log.info("Resent archived file: {}", file.getFileName());
                         delete(file);
                     })
                     .doOnError(err -> {
-                        if (err instanceof WebClientResponseException) {
-                            log.warn("Failed to resend {}: {}", file.getFileName(), ((WebClientResponseException) err).getStatusCode());
+                        if (err instanceof WebClientResponseException wce) {
+                            log.warn("Failed to resend {}: HTTP {}", file.getFileName(), wce.getStatusCode());
                         } else {
                             log.warn("Failed to resend {}: {}", file.getFileName(), err.getMessage());
                         }
@@ -74,9 +75,9 @@ public class ArchivedMetricsRetryService {
 
     private void delete(Path file) {
         try {
-            Files.delete(file);
+            Files.deleteIfExists(file);
         } catch (IOException e) {
-            log.error("Could not delete file after successful resend: {}", file.getFileName(), e);
+            log.error("Could not delete archived file: {}", file.getFileName(), e);
         }
     }
 }

@@ -1,7 +1,9 @@
 package com.streaming.metrics.dispatcher.spark.service;
 
+import com.streaming.configuration.properties.model.holder.ConfigurationPropertiesHolder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -12,17 +14,19 @@ public class SparkMetricsDispatcherService {
 
     private final Logger log = LogManager.getLogger(getClass());
 
-    private final WebClient webClient;
+    @Autowired
+    private WebClient webClient;
 
-    public SparkMetricsDispatcherService(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl("http://localhost:8080/api/metrics/").build();
-    }
+    @Autowired
+    private ConfigurationPropertiesHolder configurationPropertiesHolder;
+
 
     public void sendSparkAlert(Map<String, Object> metrics) {
         log.debug("Dispatching raw alert for high CPU");
 
+        String url = configurationPropertiesHolder.getMetricsConfigRef().getCollector().getSpark().getSparkAlertUrl();
         webClient.post()
-                .uri("/spark-alert")
+                .uri(url)
                 .bodyValue(metrics)
                 .retrieve()
                 .toBodilessEntity()

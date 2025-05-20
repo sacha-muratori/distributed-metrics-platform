@@ -5,7 +5,7 @@ import com.streaming.configuration.properties.model.holder.ConfigurationProperti
 import com.streaming.metrics.collector.scheduler.helper.ScheduledTaskHandler;
 import com.streaming.metrics.collector.service.SystemMetricsCollectorService;
 import com.streaming.metrics.dispatcher.aggregated.AggregatedMetricsDispatcherService;
-import com.streaming.metrics.dispatcher.retry.ArchivedMetricsRetryService;
+import com.streaming.metrics.dispatcher.retry.RetryMetricsDispatcherService;
 import com.streaming.metrics.dispatcher.spark.service.SparkMetricsDispatcherService;
 import com.streaming.metrics.dispatcher.spark.store.SparkMetricsCollectorStoreService;
 import org.apache.logging.log4j.LogManager;
@@ -34,7 +34,7 @@ public class SystemMetricsCollectorScheduler {
     private AggregatedMetricsDispatcherService aggregatedMetricsDispatcherService;
 
     @Autowired
-    private ArchivedMetricsRetryService archivedMetricsRetryService;
+    private RetryMetricsDispatcherService retryMetricsDispatcherService;
 
     @Autowired
     private ConfigurationPropertiesHolder configHolder;
@@ -110,12 +110,13 @@ public class SystemMetricsCollectorScheduler {
     private void aggregatedMetricsCollectionTask() {
         log.debug("Starting Metrics Collection - Aggregated");
         // Resilient Dispatcher for avoiding losing data
-        aggregatedMetricsDispatcherService.dispatchLastMinuteMetrics();
+        aggregatedMetricsDispatcherService.dispatchReadyMetrics();
     }
 
     private void archivedMetricsRetryTask() {
         log.debug("Starting Archived Metrics Retry Task");
-        archivedMetricsRetryService.retryArchivedDispatches();
+        // Retry Dispatcher for avoiding losing data
+        retryMetricsDispatcherService.retryArchivedDispatches();
     }
 
 }
