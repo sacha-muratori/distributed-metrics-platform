@@ -4,7 +4,6 @@ import com.streaming.client.identity.model.ClientIdentity;
 import com.streaming.client.identity.store.ClientIdentityStoreService;
 import com.streaming.client.registration.service.ClientRegistrationService;
 import com.streaming.configuration.properties.model.ClientConfigurationProperties;
-import com.streaming.configuration.properties.model.MetricsConfigurationProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,16 +1,19 @@
 package com.streaming.metrics.collector.service;
 
+import com.streaming.configuration.properties.model.holder.ConfigurationPropertiesHolder;
 import com.streaming.metrics.collector.strategy.contract.MetricsCollectorStrategy;
 import com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyFactory;
 import com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyType;
-import com.streaming.configuration.properties.model.holder.ConfigurationPropertiesHolder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyType.ALL_STRATEGY_NAMES;

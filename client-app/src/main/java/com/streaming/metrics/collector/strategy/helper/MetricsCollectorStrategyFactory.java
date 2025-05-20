@@ -2,8 +2,8 @@ package com.streaming.metrics.collector.strategy.helper;
 
 import com.streaming.metrics.collector.strategy.contract.MetricsCollectorStrategy;
 import com.streaming.metrics.collector.strategy.impl.CpuMetricsCollectorStrategy;
-import com.streaming.metrics.collector.strategy.impl.MemoryMetricsCollectorStrategy;
 import com.streaming.metrics.collector.strategy.impl.DiskMetricsCollectorStrategy;
+import com.streaming.metrics.collector.strategy.impl.MemoryMetricsCollectorStrategy;
 import com.streaming.metrics.collector.strategy.impl.NetworkMetricsCollectorStrategy;
 
 import java.util.Optional;

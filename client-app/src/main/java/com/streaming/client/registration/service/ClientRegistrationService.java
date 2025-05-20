@@ -1,9 +1,9 @@
 package com.streaming.client.registration.service;
 
+import com.streaming.client.identity.helper.FingerprintGenerator;
 import com.streaming.client.identity.model.ClientIdentity;
 import com.streaming.client.identity.store.ClientIdentityStoreService;
-import com.streaming.configuration.properties.model.holder.ConfigurationPropertiesHolder;
-import com.streaming.client.identity.helper.FingerprintGenerator;
+import com.streaming.configuration.properties.model.ClientConfigurationProperties;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,7 @@ public class ClientRegistrationService {
     private final Logger log = LogManager.getLogger(getClass());
 
     @Autowired
-    private ConfigurationPropertiesHolder configHolder;
+    private ClientConfigurationProperties clientConfigurationProperties;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -42,7 +42,7 @@ public class ClientRegistrationService {
     }
 
     public void tryRegisterClient(ClientIdentity client) {
-        String url = configHolder.getClientConfigRef().getRegistrationUrl();
+        String url = clientConfigurationProperties.getRegistrationUrl();
         log.debug("Attempting registration via {}", url);
 
         try {

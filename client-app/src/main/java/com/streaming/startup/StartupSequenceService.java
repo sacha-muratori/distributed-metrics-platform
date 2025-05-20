@@ -1,8 +1,8 @@
 package com.streaming.startup;
 
 import com.streaming.client.registration.service.ClientRegistrationService;
-import com.streaming.metrics.collector.scheduler.SystemMetricsCollectorScheduler;
 import com.streaming.configuration.properties.service.ConfigurationPropertiesService;
+import com.streaming.metrics.collector.scheduler.SystemMetricsCollectorScheduler;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
