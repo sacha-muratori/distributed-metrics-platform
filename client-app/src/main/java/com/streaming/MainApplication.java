@@ -1,13 +1,12 @@
 package com.streaming;
 
-import com.streaming.properties.model.MetricsConfigurationProperties;
+import com.streaming.configuration.properties.model.MetricsConfigurationProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-//@EnableRetry
 @EnableScheduling
 @EnableConfigurationProperties(MetricsConfigurationProperties.class)
 public class MainApplication {

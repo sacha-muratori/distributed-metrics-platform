@@ -1,22 +1,29 @@
 # Fallback/Default Values
+policy:
+  fetchUrl: "http://localhost:8080/api/policy"
+  schedulerIntervalMs: 300000
+  initialDelayMs: 5000
+client:
+  registrationUrl: "http://localhost:8080/api/registration"
+  schedulerIntervalMs: 60000
+  initialDelayMs: 2000
 metrics:
-  enabledStrategies:
-    - cpu
-#    - memory
-#    - hostname
-  schedule:
-    initialDelayMs: 1000
-    sparksRateMs: 1000
-    fixedRateMs: 5000
-  threshold:
-    highCpuPercentage: 85
-    configFetchUrl: "http://localhost:8080/api/config"
-    fetchIntervalMs: 60000
-  client:
-    registrationUrl: "http://localhost:8080/api/registration"
-    refreshIntervalMs: 60000
-#  dispatcher:
-#    registrationUrl: "http://localhost:8080/api/metrics"
+  collector:
+    enabledStrategies:
+      - cpu                                       # could be extended with memory, disk, hostnames new default strategies
+    threshold:
+      highCpuPercentage: 85                       # could be extended with memory, disk, hostnames new default thresholds
+    spark:
+      sparkAlertUrl: "http://localhost:8080/api/metrics/spark"
+      schedulerIntervalMs: 1000
+      initialDelayMs: 1000
+    aggregated:
+      aggregatedUrl: "http://localhost:8080/api/metrics/aggregated"
+      schedulerIntervalMs: 60000
+      initialDelayMs: 1000
+    retry:
+      schedulerIntervalMs: 120000
+      initialDelayMs: 1000
 
 
 

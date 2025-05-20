@@ -3,7 +3,7 @@ package com.streaming.metrics.collector.service;
 import com.streaming.metrics.collector.strategy.contract.MetricsCollectorStrategy;
 import com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyFactory;
 import com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyType;
-import com.streaming.properties.model.MetricsConfigurationPropertiesHolder;
+import com.streaming.configuration.properties.model.holder.ConfigurationPropertiesHolder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,19 +21,18 @@ public class SystemMetricsCollectorService {
     private static final Logger log = LogManager.getLogger(SystemMetricsCollectorService.class);
 
     @Autowired
-    private MetricsConfigurationPropertiesHolder configHolder;
+    private ConfigurationPropertiesHolder configHolder;
 
     public Map<String, Object> collectMetrics() {
         log.debug("Starting metrics collection");
 
-        List<String> enabledNames = configHolder.getConfig().getEnabledStrategies();
+        List<String> enabledNames = configHolder.getMetricsConfigRef().getCollector().getEnabledStrategies();
         log.debug("Enabled strategies: {}", String.join(", ", enabledNames));
 
         List<MetricsCollectorStrategy> strategies = resolveStrategies(enabledNames);
         log.debug("Resolved strategies: {}", strategies.stream().map(MetricsCollectorStrategy::getName).collect(Collectors.joining(", ")));
 
         Map<String, Object> metrics = new HashMap<>();
-        metrics.put("timestamp", Instant.now().toString());
         collectFromStrategies(strategies, metrics);
         log.debug("Collected metrics: {}", metrics);
 
@@ -56,6 +55,10 @@ public class SystemMetricsCollectorService {
     }
 
     private void collectFromStrategies(List<MetricsCollectorStrategy> strategies, Map<String, Object> metrics) {
+        // Adding timestamp of collection
+        metrics.put("timestamp", Instant.now().toString());
+
+        // Collecting data based on strategies defined in configuration
         for (MetricsCollectorStrategy strategy : strategies) {
             try {
                 metrics.putAll(strategy.collect());
