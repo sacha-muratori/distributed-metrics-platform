@@ -1,0 +1,22 @@
+# Fallback/Default Values
+metrics:
+  enabledStrategies:
+    - cpu
+#    - memory
+#    - hostname
+  schedule:
+    initialDelayMs: 1000
+    sparksRateMs: 1000
+    fixedRateMs: 5000
+  threshold:
+    highCpuPercentage: 85
+    configFetchUrl: "http://localhost:8080/api/config"
+    fetchIntervalMs: 60000
+  client:
+    registrationUrl: "http://localhost:8080/api/registration"
+    refreshIntervalMs: 60000
+#  dispatcher:
+#    registrationUrl: "http://localhost:8080/api/metrics"
+
+
+
