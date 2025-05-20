@@ -3,3 +3,6 @@
 /target
 /target/*
 *.iml
+
+client-app/target/
+server-app/target/
