@@ -4,7 +4,7 @@ policy:
   schedulerIntervalMs: 600000
   initialDelayMs: 5000
 client:
-  registrationUrl: "http://localhost:8080/api/registration"
+  registrationUrl: "http://localhost:8080/api/client/registration"
   schedulerIntervalMs: 60000
   initialDelayMs: 2000
 metrics:

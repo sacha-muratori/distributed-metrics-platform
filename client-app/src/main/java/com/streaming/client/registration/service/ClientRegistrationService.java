@@ -59,10 +59,10 @@ public class ClientRegistrationService {
                 .doOnNext(response -> log.debug("Registration response: {}", response))
                 .map(response -> {
                     String clientId = (String) response.get("clientId");
-
                     if (clientId != null) {
                         client.setClientId(clientId);
                         clientStore.save(client);
+
                         log.info("Successfully registered with clientId: {}", client.getClientId());
                     } else {
                         log.warn("Missing clientId in response, registration completed with fingerprint, retry later");

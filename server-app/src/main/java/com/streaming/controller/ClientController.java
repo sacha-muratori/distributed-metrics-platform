@@ -1,23 +1,26 @@
 //package com.streaming.controller;
 //
+//import com.streaming.repository.dto.ClientDTO;
+//import com.streaming.service.ClientService;
+//import org.springframework.beans.factory.annotation.Autowired;
+//import org.springframework.http.ResponseEntity;
+//import org.springframework.web.bind.annotation.PostMapping;
+//import org.springframework.web.bind.annotation.RequestBody;
+//import org.springframework.web.bind.annotation.RequestMapping;
+//import org.springframework.web.bind.annotation.RestController;
+//import reactor.core.publisher.Mono;
+//
 //@RestController
-//@RequestMapping("/api/client")
+//@RequestMapping("/api/client/")
 //public class ClientController {
 //
 //    @Autowired
-//    private ClientRepository clientRepository;
+//    private ClientService clientService;
 //
-//    @PostMapping("/register")
-//    public ResponseEntity<Map<String, String>> register(@RequestBody Map<String, String> body) {
-//        String fingerprint = body.get("fingerprint");
-//        Client client = clientRepository.findByFingerprint(fingerprint)
-//            .orElseGet(() -> {
-//                Client newClient = new Client();
-//                newClient.setId(UUID.randomUUID().toString());
-//                newClient.setFingerprint(fingerprint);
-//                return clientRepository.save(newClient);
-//            });
-//
-//        return ResponseEntity.ok(Map.of("clientId", client.getId()));
-//    }
+////    @PostMapping("/registration")
+////    public Mono<ResponseEntity<Void>> clientRegistration(@RequestBody Mono<ClientDTO> metric) {
+////        return metric
+////            .flatMap(clientService::saveAggregatedMetric)
+////            .thenReturn(ResponseEntity.ok().build());
+////    }
 //}
