@@ -1,5 +1,8 @@
 package com.streaming.metrics.collector.service;
 
+import com.streaming.client.identity.model.ClientIdentity;
+import com.streaming.client.identity.store.ClientIdentityStoreService;
+import com.streaming.configuration.properties.model.ClientConfigurationProperties;
 import com.streaming.configuration.properties.model.holder.ConfigurationPropertiesHolder;
 import com.streaming.metrics.collector.strategy.contract.MetricsCollectorStrategy;
 import com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyFactory;
@@ -26,6 +29,9 @@ public class SystemMetricsCollectorService {
     @Autowired
     private ConfigurationPropertiesHolder configHolder;
 
+    @Autowired
+    private ClientIdentityStoreService clientIdentityStoreService;
+
     public Map<String, Object> collectMetrics() {
         log.debug("Starting metrics collection");
 
@@ -36,8 +42,14 @@ public class SystemMetricsCollectorService {
         log.debug("Resolved strategies: {}", strategies.stream().map(MetricsCollectorStrategy::getName).collect(Collectors.joining(", ")));
 
         Map<String, Object> metrics = new HashMap<>();
+        insertTimestampOnMetrics(metrics);
+        log.debug("Added Timestamp: {}", metrics);
+
         collectFromStrategies(strategies, metrics);
         log.debug("Collected metrics: {}", metrics);
+
+        insertClientIdentityOnMetrics(metrics);
+        log.debug("Added client information: {}", metrics);
 
         return metrics;
     }
@@ -58,9 +70,6 @@ public class SystemMetricsCollectorService {
     }
 
     private void collectFromStrategies(List<MetricsCollectorStrategy> strategies, Map<String, Object> metrics) {
-        // Adding timestamp of collection
-        metrics.put("timestamp", Instant.now().toString());
-
         // Collecting data based on strategies defined in configuration
         for (MetricsCollectorStrategy strategy : strategies) {
             try {
@@ -69,5 +78,15 @@ public class SystemMetricsCollectorService {
                 log.warn("Error collecting metrics from {}", strategy.getClass().getSimpleName(), e);
             }
         }
+    }
+
+    private void insertTimestampOnMetrics(Map<String, Object> metrics) {
+        metrics.put("timestamp", Instant.now().toString());
+    }
+
+    private void insertClientIdentityOnMetrics(Map<String, Object> metrics) {
+        ClientIdentity clientIdentity = clientIdentityStoreService.load();
+        metrics.put("fingerprint", clientIdentity.getFingerprint());
+        metrics.put("clientId", clientIdentity.getClientId());
     }
 }

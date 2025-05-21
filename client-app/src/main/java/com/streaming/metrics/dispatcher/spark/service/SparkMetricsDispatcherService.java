@@ -6,6 +6,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
 
@@ -31,7 +32,10 @@ public class SparkMetricsDispatcherService {
                 .retrieve()
                 .toBodilessEntity()
                 .doOnSuccess(response -> log.debug("Spark alert sent successfully"))
-                .doOnError(error -> log.warn("Failed to send spark alert", error))
+                .onErrorResume(e -> {
+                    log.warn("Failed to send spark alert", e.getMessage());
+                    return Mono.empty(); // emit nothing, avoid returning any value as it is a post request
+                })
                 .subscribe(); // Fire-and-forget
     }
 }

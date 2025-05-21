@@ -6,16 +6,20 @@ import com.streaming.metrics.collector.strategy.impl.DiskMetricsCollectorStrateg
 import com.streaming.metrics.collector.strategy.impl.MemoryMetricsCollectorStrategy;
 import com.streaming.metrics.collector.strategy.impl.NetworkMetricsCollectorStrategy;
 
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Optional;
 
 public class MetricsCollectorStrategyFactory {
 
+    private static final Map<MetricsCollectorStrategyType, MetricsCollectorStrategy> CACHE = new EnumMap<>(MetricsCollectorStrategyType.class);
+
     public static Optional<MetricsCollectorStrategy> create(MetricsCollectorStrategyType type) {
-        return switch (type) {
-            case CPU -> Optional.of(new CpuMetricsCollectorStrategy());
-            case MEMORY -> Optional.of(new MemoryMetricsCollectorStrategy());
-            case DISK -> Optional.of(new DiskMetricsCollectorStrategy());
-            case NETWORK -> Optional.of(new NetworkMetricsCollectorStrategy());
-        };
+        return Optional.ofNullable(CACHE.computeIfAbsent(type, t -> switch (t) {
+            case CPU -> new CpuMetricsCollectorStrategy();
+            case MEMORY -> new MemoryMetricsCollectorStrategy();
+            case DISK -> new DiskMetricsCollectorStrategy();
+            case NETWORK -> new NetworkMetricsCollectorStrategy();
+        }));
     }
 }

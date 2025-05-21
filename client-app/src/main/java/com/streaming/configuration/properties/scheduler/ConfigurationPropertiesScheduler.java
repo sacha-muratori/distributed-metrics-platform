@@ -11,18 +11,21 @@ import org.springframework.stereotype.Component;
 public class ConfigurationPropertiesScheduler {
 
     @Autowired
-    private ConfigurationPropertiesService propertiesService;
+    private PolicyConfigurationProperties policyConfigurationProperties;
 
     @Autowired
-    private PolicyConfigurationProperties policyConfigurationProperties;
+    private ConfigurationPropertiesService propertiesService;
 
     @Autowired
     private SystemMetricsCollectorScheduler metricsCollectorScheduler;
 
-    @Scheduled(fixedRateString = "#{@policyConfigurationProperties.fetchUrl}")
+    // This Scheduler is static, it's updating the metrics properties and in turn could change the intervals
+    // of the dynamic schedulers for the metrics collection (spark, aggregated, retry)
+    @Scheduled(
+            fixedRateString = "#{@policyConfigurationProperties.schedulerIntervalMs}",
+            initialDelayString = "#{@policyConfigurationProperties.initialDelayMs}"
+    )
     public void refreshPropertiesFromServer() {
-        // This Scheduler is static, it's updating the metrics properties and in turn could change the intervals
-        // of the dynamic schedulers for the metrics collection (spark, aggregated, retry)
         boolean updated = propertiesService.fetchAndUpdateMetricsConfigs();
         if (updated) {
             metricsCollectorScheduler.rescheduleIfNeeded();

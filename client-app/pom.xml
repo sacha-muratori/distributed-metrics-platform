@@ -13,14 +13,13 @@
     <artifactId>client-app</artifactId>
     <packaging>jar</packaging>
 
-<!--    <dependencies>-->
-<!--&lt;!&ndash;        <dependency>&ndash;&gt;-->
-<!--&lt;!&ndash;            <groupId>org.springframework.boot</groupId>&ndash;&gt;-->
-<!--&lt;!&ndash;            <artifactId>spring-boot-starter-web</artifactId>&ndash;&gt;-->
-<!--&lt;!&ndash;        </dependency>&ndash;&gt;-->
-
-
-<!--    </dependencies>-->
+    <dependencies>
+        <dependency>
+            <groupId>com.github.oshi</groupId>
+            <artifactId>oshi-core</artifactId>
+            <version>6.8.1</version>
+        </dependency>
+    </dependencies>
 
     <build>
         <resources>
@@ -28,7 +27,6 @@
                 <directory>src/main/resources</directory>
                 <includes>
                     <include>**/*.yml</include>
-                    <!--                    <include>**/db/*.sql</include>-->
                 </includes>
             </resource>
         </resources>

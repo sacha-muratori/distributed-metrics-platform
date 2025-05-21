@@ -2,19 +2,26 @@ package com.streaming.metrics.collector.strategy.impl;
 
 import com.streaming.metrics.collector.strategy.contract.MetricsCollectorStrategy;
 import com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyType;
-import com.sun.management.OperatingSystemMXBean;
-import org.springframework.stereotype.Component;
+import oshi.SystemInfo;
+import oshi.hardware.CentralProcessor;
+import oshi.hardware.HardwareAbstractionLayer;
 
-import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
 public class CpuMetricsCollectorStrategy implements MetricsCollectorStrategy {
 
-    private final OperatingSystemMXBean osBean =
-            (OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean();
-    private final int availableProcessors = Runtime.getRuntime().availableProcessors();
+    private final CentralProcessor processor;
+    private long[] previousTicks;
+    private boolean isFirstMeasurement;
+
+    public CpuMetricsCollectorStrategy() {
+        SystemInfo systemInfo = new SystemInfo();
+        HardwareAbstractionLayer hal = systemInfo.getHardware();
+        this.processor = hal.getProcessor();
+        this.previousTicks = processor.getSystemCpuLoadTicks();
+        this.isFirstMeasurement = true;
+    }
 
     @Override
     public String getName() {
@@ -23,13 +30,20 @@ public class CpuMetricsCollectorStrategy implements MetricsCollectorStrategy {
 
     @Override
     public Map<String, Object> collect() {
-        double systemCpuLoad = osBean.getCpuLoad();            // [0.0 - 1.0] or -1 if not available
-        double processCpuLoad = osBean.getProcessCpuLoad();    // [0.0 - 1.0] or -1 if not available
+        double load;
+
+        if (isFirstMeasurement) {
+            // On first call, we can't calculate between ticks reliably
+            load = 0.0;
+            isFirstMeasurement = false;
+        } else {
+            load = processor.getSystemCpuLoadBetweenTicks(previousTicks) * 100;
+        }
+        previousTicks = processor.getSystemCpuLoadTicks(); // Update for next call
 
         Map<String, Object> result = new HashMap<>();
-        result.put("availableProcessors", availableProcessors);
-        result.put("systemCpuUsagePercent", systemCpuLoad >= 0 ? String.format("%.2f", systemCpuLoad * 100) : "N/A");
-        result.put("jvmProcessCpuUsagePercent", processCpuLoad >= 0 ? String.format("%.2f", processCpuLoad * 100) : "N/A");
+        result.put("availableProcessors", processor.getLogicalProcessorCount());
+        result.put("systemCpuUsagePercent", load);
         return result;
     }
 }

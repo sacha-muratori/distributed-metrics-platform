@@ -9,7 +9,6 @@ import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
 public class MemoryMetricsCollectorStrategy implements MetricsCollectorStrategy {
 
     @Override

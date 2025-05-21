@@ -6,9 +6,13 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
 @Service
@@ -16,8 +20,8 @@ public class AggregatedMetricsDispatcherService {
 
     private final Logger log = LogManager.getLogger(getClass());
 
-    private static final String METRICS_DIR = "metrics";
-    private static final String ARCHIVE_DIR = "archive";
+    private static final String METRICS_DIR = "data/metrics";
+    private static final String ARCHIVE_DIR = "data/archive";
 
     @Autowired
     private WebClient webClient;
@@ -68,15 +72,16 @@ public class AggregatedMetricsDispatcherService {
                         delete(jsonFile);
                         delete(sendingFile);
                     })
-                    .doOnError(error -> {
-                        log.error("Failed to send: {}", jsonFile.getFileName(), error);
+                    .onErrorResume(e -> {
+                        log.warn("Failed to send: {}", jsonFile.getFileName(), e.getMessage());
                         moveToArchive(jsonFile);
                         delete(sendingFile); // we only need .json archived
+                        return Mono.empty(); // emit nothing, avoid returning any value as it is a post request
                     })
                     .subscribe();
 
         } catch (IOException e) {
-            log.error("Error reading metrics file: {}", jsonFile.getFileName(), e);
+            log.warn("Error reading metrics file: {}", jsonFile.getFileName(), e);
             moveToArchive(jsonFile);
             delete(sendingFile);
         }

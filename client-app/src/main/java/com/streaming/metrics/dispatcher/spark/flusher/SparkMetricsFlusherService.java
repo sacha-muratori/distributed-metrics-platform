@@ -7,7 +7,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -19,7 +22,7 @@ public class SparkMetricsFlusherService {
     private final Logger log = LogManager.getLogger(getClass());
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private static final Path METRICS_DIR = Paths.get("metrics");
+    private static final Path METRICS_DIR = Paths.get("data/metrics");
     private static final DateTimeFormatter FILE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss.SSSX");
 
     public SparkMetricsFlusherService() {

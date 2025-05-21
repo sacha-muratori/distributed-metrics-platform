@@ -8,7 +8,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -27,27 +28,24 @@ public class ConfigurationPropertiesService {
     private PolicyConfigurationProperties policyConfigurationProperties;
 
     @Autowired
-    private RestTemplate restTemplate;
+    private WebClient webClient;
 
-    public boolean fetchAndUpdateMetricsConfigs() {
-        boolean updated = false;
-        Map<String, Object> response;
-        try {
-            response = restTemplate.getForObject(policyConfigurationProperties.getFetchUrl(), Map.class);
-
-            if (response == null) {
-                log.warn("Empty response when fetching config");
-                return false;
-            }
-        } catch (Exception e) {
-            log.warn("Failed to fetch config: {}", e.getMessage(), e);
-            return false;
-        }
-
-        // update only configuration for dynamic schedulers
-        updated |= fetchAndUpdateMetricsConfig(response);
-
-        return updated;
+    public Boolean fetchAndUpdateMetricsConfigs() {
+        return webClient.get()
+                .uri(policyConfigurationProperties.getFetchUrl())
+                .retrieve()
+                .bodyToMono(Map.class)
+                .doOnNext(response -> log.debug("Fetched config: {}", response))
+                .map(response -> {
+                    boolean updated = fetchAndUpdateMetricsConfig(response);
+                    log.debug("Metrics config updated: {}", updated);
+                    return updated;
+                })
+                .onErrorResume(e -> {
+                    log.warn("Failed to fetch config: {}", e.getMessage());
+                    return Mono.just(false);
+                })
+                .block(); //synchronous
     }
 
     public boolean fetchAndUpdateMetricsConfig(Map<String, Object> response) {

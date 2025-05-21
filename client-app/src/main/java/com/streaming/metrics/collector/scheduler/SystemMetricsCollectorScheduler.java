@@ -94,27 +94,27 @@ public class SystemMetricsCollectorScheduler {
 
     /** ACTUAL SCHEDULERS LOGIC */
     private void sparksMetricsCollectionTask() {
-        log.debug("Starting Metrics Collection - Sparks");
+        log.info("Starting Metrics Collection - Sparks");
         Map<String, Object> metrics = systemMetricsCollectorService.collectMetrics();
         rawMetricsCollectorStoreService.appendMetric(metrics);
 
-        String systemCpuUsagePercent = (String) metrics.get("systemCpuUsagePercent");
-        int threshold = configHolder.getMetricsConfigRef().getCollector().getThreshold().getHighCpuPercentage();
+        double systemCpuUsagePercent = (double) metrics.get("systemCpuUsagePercent");
+        double threshold = configHolder.getMetricsConfigRef().getCollector().getThreshold().getHighCpuPercentage();
 
-        if (Integer.parseInt(systemCpuUsagePercent) > threshold) {
+        if (systemCpuUsagePercent >= threshold) {
             // Fire and Forget - Fault Tolerance is in Aggregated Metrics Collection Scheduler
             sparkMetricsDispatcherService.sendSparkAlert(metrics);
         }
     }
 
     private void aggregatedMetricsCollectionTask() {
-        log.debug("Starting Metrics Collection - Aggregated");
+        log.info("Starting Metrics Collection - Aggregated");
         // Resilient Dispatcher for avoiding losing data
         aggregatedMetricsDispatcherService.dispatchReadyMetrics();
     }
 
     private void archivedMetricsRetryTask() {
-        log.debug("Starting Archived Metrics Retry Task");
+        log.info("Starting Archived Metrics Retry Task");
         // Retry Dispatcher for avoiding losing data
         retryMetricsDispatcherService.retryArchivedDispatches();
     }

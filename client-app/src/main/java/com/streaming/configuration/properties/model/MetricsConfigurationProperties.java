@@ -24,7 +24,7 @@ public class MetricsConfigurationProperties {
 
     @Data
     public static class Threshold {
-        private int highCpuPercentage;
+        private double highCpuPercentage;
     }
 
     @Data

@@ -1,7 +1,5 @@
 package com.streaming.client.registration.scheduler;
 
-import com.streaming.client.identity.model.ClientIdentity;
-import com.streaming.client.identity.store.ClientIdentityStoreService;
 import com.streaming.client.registration.service.ClientRegistrationService;
 import com.streaming.configuration.properties.model.ClientConfigurationProperties;
 import org.apache.logging.log4j.LogManager;
@@ -16,28 +14,19 @@ public class ClientRegistrationScheduler {
     private final Logger log = LogManager.getLogger(getClass());
 
     @Autowired
-    private ClientIdentityStoreService clientStore;
+    private ClientConfigurationProperties clientConfigurationProperties;
 
     @Autowired
     private ClientRegistrationService registrationService;
 
-    @Autowired
-    private ClientConfigurationProperties clientConfigurationProperties;
-
+    // Attemps to register the client and get the UUID from the Server if previously not done
+    // Does not interact with I/O but with in-memory Client Identity cached object each load,
+    // which immediately short-circuits the execution after a client has been registered once and for all.
     @Scheduled(
             fixedRateString = "#{@clientConfigurationProperties.schedulerIntervalMs}",
             initialDelayString = "#{@clientConfigurationProperties.initialDelayMs}"
     )
     public void attemptRegistrationIfUnregistered() {
-        // Attemps to register the client and get the UUID from the Server if previously not done
-        // Does not interact with I/O but with in-memory Client Identity cached object each load,
-        // which immediately short-circuits the execution after a client has been registered once and for all.
-        ClientIdentity client = clientStore.load();
-
-        if (client.getClientId() == null) {
-            log.info("ClientId is still null. Attempting background registration.");
-            registrationService.tryRegisterClient(client);
-            clientStore.save(client);
-        }
+        registrationService.registerClient();
     }
 }

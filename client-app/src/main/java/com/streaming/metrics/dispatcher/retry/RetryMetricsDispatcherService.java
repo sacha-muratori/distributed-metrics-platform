@@ -1,7 +1,6 @@
 package com.streaming.metrics.dispatcher.retry;
 
 import com.streaming.configuration.properties.model.holder.ConfigurationPropertiesHolder;
-import com.streaming.metrics.dispatcher.aggregated.AggregatedMetricsDispatcherService;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +9,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.stream.Stream;
 
 @Service
@@ -18,7 +19,7 @@ public class RetryMetricsDispatcherService {
 
     private final Logger log = LogManager.getLogger(getClass());
 
-    private static final Path ARCHIVE_DIR = Paths.get("archive");
+    private static final Path ARCHIVE_DIR = Paths.get("data/archive");
 
     @Autowired
     private WebClient webClient;
@@ -30,7 +31,7 @@ public class RetryMetricsDispatcherService {
         log.debug("Retrying archived dispatches");
 
         if (!Files.exists(ARCHIVE_DIR)) {
-            log.info("Archive directory does not exist. Nothing to retry.");
+            log.debug("Archive directory does not exist. Nothing to retry.");
             return;
         }
 

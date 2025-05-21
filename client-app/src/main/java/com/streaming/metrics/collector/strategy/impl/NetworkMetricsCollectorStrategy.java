@@ -8,7 +8,6 @@ import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
 public class NetworkMetricsCollectorStrategy implements MetricsCollectorStrategy {
 
     @Override

@@ -8,7 +8,6 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-@Component
 public class DiskMetricsCollectorStrategy implements MetricsCollectorStrategy {
 
     @Override
