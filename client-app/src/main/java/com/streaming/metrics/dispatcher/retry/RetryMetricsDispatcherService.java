@@ -6,12 +6,9 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.stream.Stream;
 
 @Service
@@ -20,6 +17,7 @@ public class RetryMetricsDispatcherService {
     private final Logger log = LogManager.getLogger(getClass());
 
     private static final Path ARCHIVE_DIR = Paths.get("data/archive");
+    private static final int MAX_FILES_PER_RUN = 100;
 
     @Autowired
     private WebClient webClient;
@@ -38,6 +36,7 @@ public class RetryMetricsDispatcherService {
         try (Stream<Path> files = Files.list(ARCHIVE_DIR)) {
             files
                     .filter(path -> path.toString().endsWith(".json"))
+                    .limit(MAX_FILES_PER_RUN)
                     .forEach(this::attemptResend);
         } catch (IOException e) {
             log.error("Error listing archived files", e);
@@ -47,9 +46,18 @@ public class RetryMetricsDispatcherService {
     }
 
     private void attemptResend(Path file) {
+        Path sendingFile = file.resolveSibling(file.getFileName().toString().replace(".json", ".sending"));
         try {
+            // Attempt to move file to .sending — skip if someone else already is retrying it
+            try {
+                Files.move(file, sendingFile);
+            } catch (FileAlreadyExistsException | AtomicMoveNotSupportedException e) {
+                log.debug("File already being retried by another thread: {}", file.getFileName());
+                return;
+            }
+
+            byte[] data = Files.readAllBytes(sendingFile);
             String url = configurationPropertiesHolder.getMetricsConfigRef().getCollector().getAggregated().getAggregatedUrl();
-            byte[] data = Files.readAllBytes(file);
 
             webClient.post()
                     .uri(url)
@@ -57,20 +65,22 @@ public class RetryMetricsDispatcherService {
                     .retrieve()
                     .toBodilessEntity()
                     .doOnSuccess(resp -> {
-                        log.info("Resent archived file: {}", file.getFileName());
-                        delete(file);
+                        log.info("Successfully resent archived file: {}", sendingFile.getFileName());
+                        delete(sendingFile);
                     })
                     .doOnError(err -> {
-                        if (err instanceof WebClientResponseException wce) {
-                            log.warn("Failed to resend {}: HTTP {}", file.getFileName(), wce.getStatusCode());
-                        } else {
-                            log.warn("Failed to resend {}: {}", file.getFileName(), err.getMessage());
+                        log.warn("Failed to resend {}: {}", sendingFile.getFileName(), err.getMessage());
+                        // Revert file for next retry pass
+                        try {
+                            Files.move(sendingFile, file, StandardCopyOption.REPLACE_EXISTING);
+                        } catch (IOException moveBackErr) {
+                            log.error("Could not restore file {} for retry", sendingFile.getFileName(), moveBackErr);
                         }
                     })
                     .subscribe();
 
         } catch (IOException e) {
-            log.error("Could not read archived file: {}", file.getFileName(), e);
+            log.error("Could not read or move archived file: {}", file.getFileName(), e);
         }
     }
 

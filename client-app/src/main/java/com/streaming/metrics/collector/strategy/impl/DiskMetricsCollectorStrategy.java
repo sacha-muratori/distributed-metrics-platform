@@ -2,7 +2,6 @@ package com.streaming.metrics.collector.strategy.impl;
 
 import com.streaming.metrics.collector.strategy.contract.MetricsCollectorStrategy;
 import com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyType;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.util.HashMap;

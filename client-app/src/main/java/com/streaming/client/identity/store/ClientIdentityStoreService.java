@@ -2,8 +2,7 @@ package com.streaming.client.identity.store;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.streaming.client.identity.model.ClientIdentity;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -11,9 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 @Component
+@Slf4j
 public class ClientIdentityStoreService {
-
-    private final Logger log = LogManager.getLogger(getClass());
 
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Path CLIENT_FILE =

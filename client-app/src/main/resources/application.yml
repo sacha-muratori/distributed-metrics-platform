@@ -1,31 +1,27 @@
 # Fallback/Default Values
 policy:
-  fetchUrl: "http://localhost:8080/api/policy"
+  fetchUrl: "${SERVER_URL:http://localhost:8080}/api/policy"
   schedulerIntervalMs: 600000
   initialDelayMs: 5000
 client:
-  registrationUrl: "http://localhost:8080/api/client/registration"
+  registrationUrl: "${SERVER_URL:http://localhost:8080}/api/client/registration"
   schedulerIntervalMs: 60000
   initialDelayMs: 2000
 metrics:
   collector:
     enabledStrategies:
-      - cpu                                       # could be extended with memory, disk, hostnames new default strategies
+      - cpu                                      # could be extended with memory, disk, hostnames new default strategies
     threshold:
       highCpuPercentage: 1.0                     # could be extended with memory, disk, hostnames new default thresholds
     spark:
-      sparkAlertUrl: "http://localhost:8080/api/metrics/spark"
+      sparkAlertUrl: "${SERVER_URL:http://localhost:8080}/api/metrics/spark"
       schedulerIntervalMs: 1000
       initialDelayMs: 1500
     aggregated:
-      aggregatedUrl: "http://localhost:8080/api/metrics/aggregated"
+      aggregatedUrl: "${SERVER_URL:http://localhost:8080}/api/metrics/aggregated"
       schedulerIntervalMs: 60000
       initialDelayMs: 3000
     retry:
       schedulerIntervalMs: 120000
       initialDelayMs: 6000
-
-server:
-  port: 8090 # Port change for MVP testing
-
 

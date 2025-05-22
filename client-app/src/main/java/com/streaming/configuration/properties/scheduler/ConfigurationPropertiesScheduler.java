@@ -3,11 +3,13 @@ package com.streaming.configuration.properties.scheduler;
 import com.streaming.configuration.properties.model.PolicyConfigurationProperties;
 import com.streaming.configuration.properties.service.ConfigurationPropertiesService;
 import com.streaming.metrics.collector.scheduler.SystemMetricsCollectorScheduler;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class ConfigurationPropertiesScheduler {
 
     @Autowired
@@ -26,10 +28,14 @@ public class ConfigurationPropertiesScheduler {
             initialDelayString = "#{@policyConfigurationProperties.initialDelayMs}"
     )
     public void refreshPropertiesFromServer() {
-        boolean updated = propertiesService.fetchAndUpdateMetricsConfigs();
-        if (updated) {
-            metricsCollectorScheduler.rescheduleIfNeeded();
-        }
+        propertiesService.fetchAndUpdateMetricsConfigsReactive()
+                .doOnNext(updated -> {
+                    if (updated) {
+                        metricsCollectorScheduler.rescheduleMetricsCollectionTasks();
+                    }
+                })
+                .doOnError(e -> log.warn("Failed to refresh config: {}", e.getMessage()))
+                .subscribe();
     }
 }
 

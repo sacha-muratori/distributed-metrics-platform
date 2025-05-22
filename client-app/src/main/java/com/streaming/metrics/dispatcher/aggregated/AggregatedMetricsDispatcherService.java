@@ -62,7 +62,8 @@ public class AggregatedMetricsDispatcherService {
             String url = configurationPropertiesHolder.getMetricsConfigRef().getCollector().getAggregated().getAggregatedUrl();
             byte[] data = Files.readAllBytes(jsonFile);
 
-            webClient.post()
+            webClient.
+                    post()
                     .uri(url)
                     .bodyValue(data)
                     .retrieve()

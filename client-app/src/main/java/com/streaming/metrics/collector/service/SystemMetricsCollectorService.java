@@ -2,13 +2,11 @@ package com.streaming.metrics.collector.service;
 
 import com.streaming.client.identity.model.ClientIdentity;
 import com.streaming.client.identity.store.ClientIdentityStoreService;
-import com.streaming.configuration.properties.model.ClientConfigurationProperties;
 import com.streaming.configuration.properties.model.holder.ConfigurationPropertiesHolder;
 import com.streaming.metrics.collector.strategy.contract.MetricsCollectorStrategy;
 import com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyFactory;
 import com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -22,9 +20,8 @@ import java.util.stream.Collectors;
 import static com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyType.ALL_STRATEGY_NAMES;
 
 @Service
+@Slf4j
 public class SystemMetricsCollectorService {
-
-    private static final Logger log = LogManager.getLogger(SystemMetricsCollectorService.class);
 
     @Autowired
     private ConfigurationPropertiesHolder configHolder;
@@ -42,14 +39,14 @@ public class SystemMetricsCollectorService {
         log.debug("Resolved strategies: {}", strategies.stream().map(MetricsCollectorStrategy::getName).collect(Collectors.joining(", ")));
 
         Map<String, Object> metrics = new HashMap<>();
-        insertTimestampOnMetrics(metrics);
-        log.debug("Added Timestamp: {}", metrics);
+        insertClientIdentityOnMetrics(metrics);
+        log.debug("Added client information: {}", metrics);
 
         collectFromStrategies(strategies, metrics);
         log.debug("Collected metrics: {}", metrics);
 
-        insertClientIdentityOnMetrics(metrics);
-        log.debug("Added client information: {}", metrics);
+        insertTimestampOnMetrics(metrics);
+        log.debug("Added Timestamp: {}", metrics);
 
         return metrics;
     }

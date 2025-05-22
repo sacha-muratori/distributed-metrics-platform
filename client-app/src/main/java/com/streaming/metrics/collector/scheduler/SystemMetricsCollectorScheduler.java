@@ -8,8 +8,7 @@ import com.streaming.metrics.dispatcher.aggregated.AggregatedMetricsDispatcherSe
 import com.streaming.metrics.dispatcher.retry.RetryMetricsDispatcherService;
 import com.streaming.metrics.dispatcher.spark.service.SparkMetricsDispatcherService;
 import com.streaming.metrics.dispatcher.spark.store.SparkMetricsCollectorStoreService;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.stereotype.Component;
@@ -17,9 +16,8 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 @Component
+@Slf4j
 public class SystemMetricsCollectorScheduler {
-
-    private final Logger log = LogManager.getLogger(getClass());
 
     @Autowired
     private SystemMetricsCollectorService systemMetricsCollectorService;
@@ -46,7 +44,7 @@ public class SystemMetricsCollectorScheduler {
     private ScheduledTaskHandler aggregatedTaskHandler;
     private ScheduledTaskHandler archivedRetryTaskHandler;
 
-    public void rescheduleIfNeeded() {
+    public void rescheduleMetricsCollectionTasks() {
         log.info("Rescheduling metrics collection tasks due to config update");
         if (sparksTaskHandler != null) sparksTaskHandler.cancel();
         if (aggregatedTaskHandler != null) aggregatedTaskHandler.cancel();

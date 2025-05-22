@@ -1,0 +1,64 @@
+x-client-base: &client-base
+  build:
+    context: ./client-app
+    dockerfile: Dockerfile
+  ports:
+    - "8080:8080"  # Placeholder, override below
+  environment:
+    - SERVER_URL=http://localhost:8080
+
+services:
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka
+    environment:
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_KRAFT_CLUSTER_ID=kraft-cluster-12345
+    ports:
+      - "9092:9092"
+
+  mongo:
+    image: mongo:6.0
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: distributed_metrics
+     volumes:
+       - mongo-data:/data/db
+
+  server-app:
+    depends_on:
+      - kafka
+      - mongo
+    build:
+      context: ./server-app
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
+      - MONGO_URI=mongodb://mongo:27017/distributed_metrics
+
+  client-app-1:
+    <<: *client-base
+    ports:
+      - "8081:8080"
+
+  client-app-2:
+    <<: *client-base
+    ports:
+      - "8082:8080"
+
+  client-app-3:
+    <<: *client-base
+    ports:
+      - "8083:8080"
+

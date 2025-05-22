@@ -12,6 +12,9 @@ import java.util.Map;
 @Service
 public class SparkMetricsCollectorStoreService {
 
+    private static final int FLUSH_THRESHOLD = 200; // Should be calculated dynamically based on the Strategies chosen
+    // Considering 1 metric ≈ 1KB, want to dispatch a file with 200 metrics to not overload the server with POST requests.
+
     @Autowired
     private InMemorySparkMetricsBuffer buffer;
 
@@ -21,28 +24,14 @@ public class SparkMetricsCollectorStoreService {
     @Autowired
     private SparkMetricsFlusherService flusherService;
 
+
     public void appendMetric(Map<String, Object> metrics) {
         buffer.store(metrics);
 
-        int flushThreshold = calculateFlushThreshold();
-        if (buffer.size() >= flushThreshold) {
-            List<Map<String, Object>> batch = buffer.drainBatch(flushThreshold);
+        if (buffer.size() >= FLUSH_THRESHOLD) {
+            List<Map<String, Object>> batch = buffer.drainBatch(FLUSH_THRESHOLD);
 
             flusherService.flushToDisk(batch);
         }
-    }
-    private int calculateFlushThreshold() {
-        long aggregatedIntervalMs = configHolder.getMetricsConfigRef().getCollector()
-                .getAggregated().getSchedulerIntervalMs();
-        long sparkIntervalMs = configHolder.getMetricsConfigRef().getCollector()
-                .getSpark().getSchedulerIntervalMs();
-
-        if (sparkIntervalMs <= 0) {
-            throw new IllegalArgumentException("sparkIntervalMs must be > 0");
-        }
-
-        // Flush every 10% of the number of spark intervals per aggregated interval
-        int flushThreshold = Math.max(1, (int) (aggregatedIntervalMs / sparkIntervalMs) / 10);
-        return flushThreshold;
     }
 }

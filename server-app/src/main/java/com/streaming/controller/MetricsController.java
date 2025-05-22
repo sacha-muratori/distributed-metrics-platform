@@ -1,40 +1,42 @@
 package com.streaming.controller;
 
-import com.streaming.service.MetricsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
 
-import java.time.Instant;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/metrics")
+@Slf4j
 public class MetricsController {
 
-    @Autowired
-    private MetricsService metricsService;
+    // 1. Spark: fire-and-forget, JSON body is a metric map
+    @PostMapping("/spark")
+    public ResponseEntity<Void> receiveSparkMetric(@RequestBody Map<String, Object> metric) {
+        log.info("Received spark metric: {}", metric);
+        // Fire-and-forget — processing could be async
+        return ResponseEntity.accepted().build(); // HTTP 202
+    }
 
-//    @PostMapping("/spark")
-//    public Mono<Void> ingestSpark(@RequestBody Mono<MetricDTO> sparkMetric) {
-//        return sparkMetric
-//            .flatMap(metricsService::saveSparkMetric);
-//    }
-//
-//    // or is it a List of Metrics ?
-//    @PostMapping("/aggregated")
-//    public Mono<ResponseEntity<Void>> ingestAggregated(@RequestBody Mono<MetricDTO> metric) {
-//        return metric
-//            .flatMap(metricsService::saveAggregatedMetric)
-//            .thenReturn(ResponseEntity.ok().build());
-//    }
-//
-//    // Different ways of
-//    @GetMapping("/high-cpu")
-//    public Flux<String> getClientsWithHighCpu(@RequestParam double threshold, @RequestParam double threshold) {
-//        return metricsService.findHighCpuClients(threshold, Instant.now().minusSeconds(300))
-//                .map(SparkMetricDTO::clientId);
-//    }
+    // 2. Aggregated: receive raw JSON payload (file content)
+    @PostMapping("/aggregated")
+    public ResponseEntity<Void> receiveAggregatedMetrics(@RequestBody byte[] payload) {
+        String jsonString = new String(payload, StandardCharsets.UTF_8);
+        log.info("Received aggregated metrics batch: {}", jsonString);
+        // You can store or parse jsonString here
+        return ResponseEntity.accepted().build(); // HTTP 202
+    }
 
+    // 3. Retry: same structure as aggregated, just from archive
+    @PostMapping("/retry")
+    public ResponseEntity<Void> receiveRetryBatch(@RequestBody byte[] payload) {
+        String jsonString = new String(payload, StandardCharsets.UTF_8);
+        log.info("Received retry batch: {}", jsonString);
+        // Retry logic can be triggered here (e.g., parse again or re-store)
+        return ResponseEntity.accepted().build(); // HTTP 202
+    }
 }

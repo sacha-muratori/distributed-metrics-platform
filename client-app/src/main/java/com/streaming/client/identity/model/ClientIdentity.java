@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class ClientIdentity {
-    private String fingerprint;
     private String clientId;
+    private String fingerprint;
 }

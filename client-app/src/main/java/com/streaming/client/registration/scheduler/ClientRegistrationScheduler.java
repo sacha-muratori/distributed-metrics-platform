@@ -2,16 +2,14 @@ package com.streaming.client.registration.scheduler;
 
 import com.streaming.client.registration.service.ClientRegistrationService;
 import com.streaming.configuration.properties.model.ClientConfigurationProperties;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
+@Slf4j
 public class ClientRegistrationScheduler {
-
-    private final Logger log = LogManager.getLogger(getClass());
 
     @Autowired
     private ClientConfigurationProperties clientConfigurationProperties;
@@ -27,6 +25,15 @@ public class ClientRegistrationScheduler {
             initialDelayString = "#{@clientConfigurationProperties.initialDelayMs}"
     )
     public void attemptRegistrationIfUnregistered() {
-        registrationService.registerClient();
+        registrationService.registerClient()
+                .doOnNext(updated -> {
+                    if (updated) {
+                        log.info("Client registration updated.");
+                    } else {
+                        log.debug("Client already registered, no update needed.");
+                    }
+                })
+                .doOnError(e -> log.warn("Error during client registration: {}", e.getMessage()))
+                .subscribe();
     }
 }

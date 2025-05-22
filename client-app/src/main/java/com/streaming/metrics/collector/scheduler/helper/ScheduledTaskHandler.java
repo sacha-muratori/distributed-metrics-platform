@@ -20,7 +20,6 @@ public class ScheduledTaskHandler {
         this.fixedRate = fixedRate;
     }
 
-    // TODO to be re-reviewed
     public void schedule() {
         cancel(); // Cancel previous if running
 

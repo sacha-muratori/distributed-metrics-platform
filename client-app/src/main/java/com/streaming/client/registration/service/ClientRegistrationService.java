@@ -4,8 +4,7 @@ import com.streaming.client.identity.helper.FingerprintGenerator;
 import com.streaming.client.identity.model.ClientIdentity;
 import com.streaming.client.identity.store.ClientIdentityStoreService;
 import com.streaming.configuration.properties.model.ClientConfigurationProperties;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -14,9 +13,8 @@ import reactor.core.publisher.Mono;
 import java.util.Map;
 
 @Service
+@Slf4j
 public class ClientRegistrationService {
-
-    private final Logger log = LogManager.getLogger(getClass());
 
     @Autowired
     private ClientConfigurationProperties clientConfigurationProperties;
@@ -27,7 +25,11 @@ public class ClientRegistrationService {
     @Autowired
     private ClientIdentityStoreService clientStore;
 
-    public void registerClient() {
+    /**
+     * Tries to register client if not registered yet.
+     * Returns Mono<Boolean> indicating whether a registration was performed (true) or skipped (false).
+     */
+    public Mono<Boolean> registerClient() {
         ClientIdentity client = clientStore.load();
 
         if (client.getFingerprint() == null) {
@@ -36,45 +38,31 @@ public class ClientRegistrationService {
             clientStore.save(client);
         }
 
-        if (client.getClientId() == null) {
-            log.debug("ClientId is still null. Attempting background registration.");
-            tryRegisterClient(client);
-            clientStore.save(client);
-        }
-    }
-
-    public void tryRegisterClient(ClientIdentity client) {
-        // Don't register again if already registered
         if (client.getClientId() != null) {
-            return;
+            // Already registered, skip
+            return Mono.just(false);
         }
 
-        log.debug("Attempting registration via {}", clientConfigurationProperties.getRegistrationUrl());
+        log.debug("ClientId is null, attempting registration.");
 
-        webClient.post()
+        return webClient.post()
                 .uri(clientConfigurationProperties.getRegistrationUrl())
                 .bodyValue(Map.of("fingerprint", client.getFingerprint()))
                 .retrieve()
                 .bodyToMono(Map.class)
-                .doOnNext(response -> log.debug("Registration response: {}", response))
-                .map(response -> {
+                .flatMap(response -> {
                     String clientId = (String) response.get("clientId");
                     if (clientId != null) {
                         client.setClientId(clientId);
                         clientStore.save(client);
-
-                        log.info("Successfully registered with clientId: {}", client.getClientId());
+                        log.info("Successfully registered with clientId: {}", clientId);
+                        return Mono.just(true);
                     } else {
-                        log.warn("Missing clientId in response, registration completed with fingerprint, retry later");
+                        log.warn("Registration succeeded but clientId missing");
+                        return Mono.just(false);
                     }
-                    return null; // continue with Mono<Void>
                 })
-                .onErrorResume(e -> {
-                    log.warn("Registration failed: {}", e.getMessage());
-                    return Mono.empty(); // emit nothing, avoid returning any value
-                })
-                .block(); // returns null (Mono<Void>.block())
-
+                .doOnError(e -> log.warn("Registration failed, will try next time: {}", e.getMessage()))
+                .onErrorReturn(false);
     }
-
 }

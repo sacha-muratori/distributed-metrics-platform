@@ -4,8 +4,7 @@ import com.streaming.configuration.properties.model.MetricsConfigurationProperti
 import com.streaming.configuration.properties.model.PolicyConfigurationProperties;
 import com.streaming.configuration.properties.model.holder.ConfigurationPropertiesHolder;
 import com.streaming.metrics.collector.strategy.helper.MetricsCollectorStrategyType;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -17,9 +16,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 @Service
+@Slf4j
 public class ConfigurationPropertiesService {
-
-    private final Logger log = LogManager.getLogger(getClass());
 
     @Autowired
     private ConfigurationPropertiesHolder configHolder;
@@ -30,22 +28,15 @@ public class ConfigurationPropertiesService {
     @Autowired
     private WebClient webClient;
 
-    public Boolean fetchAndUpdateMetricsConfigs() {
+    public Mono<Boolean> fetchAndUpdateMetricsConfigsReactive() {
         return webClient.get()
                 .uri(policyConfigurationProperties.getFetchUrl())
                 .retrieve()
                 .bodyToMono(Map.class)
                 .doOnNext(response -> log.debug("Fetched config: {}", response))
-                .map(response -> {
-                    boolean updated = fetchAndUpdateMetricsConfig(response);
-                    log.debug("Metrics config updated: {}", updated);
-                    return updated;
-                })
-                .onErrorResume(e -> {
-                    log.warn("Failed to fetch config: {}", e.getMessage());
-                    return Mono.just(false);
-                })
-                .block(); //synchronous
+                .map(this::fetchAndUpdateMetricsConfig)
+                .doOnNext(updated -> log.debug("Metrics config updated: {}", updated))
+                .onErrorReturn(false);
     }
 
     public boolean fetchAndUpdateMetricsConfig(Map<String, Object> response) {
@@ -61,6 +52,7 @@ public class ConfigurationPropertiesService {
             updateRetry(updated.getCollector().getRetry(), (Map<String, Object>) collectorMap.get("retry"));
         }
 
+        // Compare whole config for equality
         if (!updated.equals(current)) {
             configHolder.setMetricsConfigRef(updated);
             log.debug("Metrics configuration updated atomically");
@@ -73,15 +65,17 @@ public class ConfigurationPropertiesService {
 
     private MetricsConfigurationProperties deepCopy(MetricsConfigurationProperties original) {
         MetricsConfigurationProperties copy = new MetricsConfigurationProperties();
-        MetricsConfigurationProperties.Collector collector = new MetricsConfigurationProperties.Collector();
-        collector.setEnabledStrategies(new ArrayList<>(original.getCollector().getEnabledStrategies()));
 
-        collector.setThreshold(copyThreshold(original.getCollector().getThreshold()));
-        collector.setSpark(copySpark(original.getCollector().getSpark()));
-        collector.setAggregated(copyAggregated(original.getCollector().getAggregated()));
-        collector.setRetry(copyRetry(original.getCollector().getRetry()));
+        MetricsConfigurationProperties.Collector collectorCopy = new MetricsConfigurationProperties.Collector();
+        collectorCopy.setEnabledStrategies(new ArrayList<>(original.getCollector().getEnabledStrategies()));
 
-        copy.setCollector(collector);
+        collectorCopy.setThreshold(copyThreshold(original.getCollector().getThreshold()));
+        collectorCopy.setSpark(copySpark(original.getCollector().getSpark()));
+        collectorCopy.setAggregated(copyAggregated(original.getCollector().getAggregated()));
+        collectorCopy.setRetry(copyRetry(original.getCollector().getRetry()));
+
+        copy.setCollector(collectorCopy);
+
         return copy;
     }
 

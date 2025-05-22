@@ -1,13 +1,17 @@
-package com.streaming.repository.model.entity;
+package com.streaming.repository.model;
 
 import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.stereotype.Component;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
 
+@Document(collection = "metrics_policy")
 @Data
-public class MetricsConfigurationProperties {
+public class MetricsConfigurationDocument {
+
+    @Id
+    private int id;
 
     private Collector collector = new Collector();
 
