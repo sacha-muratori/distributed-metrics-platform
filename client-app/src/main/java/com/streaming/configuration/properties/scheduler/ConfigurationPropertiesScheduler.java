@@ -31,7 +31,7 @@ public class ConfigurationPropertiesScheduler {
         propertiesService.fetchAndUpdateMetricsConfigsReactive()
                 .doOnNext(updated -> {
                     if (updated) {
-                        metricsCollectorScheduler.rescheduleMetricsCollectionTasks();
+                        metricsCollectorScheduler.rescheduleMetricsCollectionSchedulers();
                     }
                 })
                 .doOnError(e -> log.warn("Failed to refresh config: {}", e.getMessage()))

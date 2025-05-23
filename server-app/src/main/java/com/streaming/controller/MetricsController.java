@@ -1,42 +1,58 @@
 package com.streaming.controller;
 
+import com.streaming.kafka.producer.KafkaAggregatedMetricsProducer;
+import com.streaming.kafka.producer.KafkaSparkMetricsProducer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Map;
-
 @RestController
 @RequestMapping("/api/metrics")
 @Slf4j
 public class MetricsController {
 
-    // 1. Spark: fire-and-forget, JSON body is a metric map
+    @Autowired
+    private KafkaSparkMetricsProducer sparkMetricsProducer;
+
+    @Autowired
+    private KafkaAggregatedMetricsProducer aggregatedMetricsProducer;
+
+    // 1. Spark metrics - JSON map
     @PostMapping("/spark")
     public ResponseEntity<Void> receiveSparkMetric(@RequestBody Map<String, Object> metric) {
-        log.info("Received spark metric: {}", metric);
-        // Fire-and-forget — processing could be async
-        return ResponseEntity.accepted().build(); // HTTP 202
+        try {
+            sparkMetricsProducer.sendSparkMetricToTopic(metric); // async fire-and-forget
+            return ResponseEntity.accepted().build(); // 202
+        } catch (Exception e) {
+            log.error("Error sending spark metric", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    // 2. Aggregated: receive raw JSON payload (file content)
+    // 2. Aggregated metrics - raw JSON payload as bytes
     @PostMapping("/aggregated")
     public ResponseEntity<Void> receiveAggregatedMetrics(@RequestBody byte[] payload) {
-        String jsonString = new String(payload, StandardCharsets.UTF_8);
-        log.info("Received aggregated metrics batch: {}", jsonString);
-        // You can store or parse jsonString here
-        return ResponseEntity.accepted().build(); // HTTP 202
+        try {
+            aggregatedMetricsProducer.sendAggregatedMetricsToTopic(payload);
+            return ResponseEntity.accepted().build();
+        } catch (Exception e) {
+            log.error("Error sending aggregated metrics", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
-    // 3. Retry: same structure as aggregated, just from archive
+    // 3. Retry batch - raw JSON payload as bytes
     @PostMapping("/retry")
     public ResponseEntity<Void> receiveRetryBatch(@RequestBody byte[] payload) {
-        String jsonString = new String(payload, StandardCharsets.UTF_8);
-        log.info("Received retry batch: {}", jsonString);
-        // Retry logic can be triggered here (e.g., parse again or re-store)
-        return ResponseEntity.accepted().build(); // HTTP 202
+        try {
+            aggregatedMetricsProducer.sendAggregatedMetricsToTopic(payload);
+            return ResponseEntity.accepted().build();
+        } catch (Exception e) {
+            log.error("Error sending retry batch", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

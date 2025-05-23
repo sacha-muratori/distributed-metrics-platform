@@ -44,7 +44,7 @@ public class SystemMetricsCollectorScheduler {
     private ScheduledTaskHandler aggregatedTaskHandler;
     private ScheduledTaskHandler archivedRetryTaskHandler;
 
-    public void rescheduleMetricsCollectionTasks() {
+    public void rescheduleMetricsCollectionSchedulers() {
         log.info("Rescheduling metrics collection tasks due to config update");
         if (sparksTaskHandler != null) sparksTaskHandler.cancel();
         if (aggregatedTaskHandler != null) aggregatedTaskHandler.cancel();
