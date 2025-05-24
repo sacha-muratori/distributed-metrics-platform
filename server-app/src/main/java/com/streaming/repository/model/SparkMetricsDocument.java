@@ -10,12 +10,12 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 
-@Document(collection = "metrics")
+@Document(collection = "spark_metrics")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @CompoundIndex(name = "client_timestamp_idx", def = "{'clientId': 1, 'timestamp': 1}")
-public class MetricsDocument {
+public class SparkMetricsDocument {
 
     @Id
     private String id;

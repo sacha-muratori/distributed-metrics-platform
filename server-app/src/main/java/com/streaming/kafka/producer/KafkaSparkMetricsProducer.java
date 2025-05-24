@@ -23,15 +23,16 @@ public class KafkaSparkMetricsProducer {
     @Autowired
     private KafkaTemplate<String, Map<String, Object>> kafkaTemplate;
 
-    public void sendSparkMetricToTopic(Map<String, Object> metric) {
+    // Return CompletableFuture to allow reactive wrapping
+    public CompletableFuture<SendResult<String, Map<String, Object>>> sendSparkMetricToTopic(Map<String, Object> metric) {
         CompletableFuture<SendResult<String, Map<String, Object>>> future = kafkaTemplate.send(topic, metric);
         future.whenComplete((result, ex) -> {
             if (ex != null) {
                 log.error("Failed to send spark metric to Kafka", ex);
-                // handle error, maybe dead letter queue
             } else {
                 log.debug("Sent spark metric to Kafka topic {}", topic);
             }
         });
+        return future;
     }
 }

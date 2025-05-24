@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -80,15 +81,6 @@ public class SchemaService {
         }
     }
 
-//    public Set<ValidationMessage> validate(byte[] input, List<String> strategies) {
-//        List<ValidatedLine> validatedLines = parseAndValidateEachLine(input, strategies);
-//        Set<ValidationMessage> allErrors = new HashSet<>();
-//        for (ValidatedLine vl : validatedLines) {
-//            allErrors.addAll(vl.errors());
-//        }
-//        return allErrors;
-//    }
-
     public List<ValidatedLine> parseAndValidateEachLine(byte[] input, List<String> strategies) {
         List<ValidatedLine> result = new ArrayList<>();
         JsonSchema schema = generateSchema(strategies);
@@ -122,7 +114,10 @@ public class SchemaService {
 
         doc.setFingerprint((String) input.get("fingerprint"));
         doc.setClientId((String) input.get("clientId"));
-        doc.setTimestamp((String) input.get("timestamp"));
+
+        String tsString = (String) input.get("timestamp");
+        Instant timestamp = Instant.parse(tsString);
+        doc.setTimestamp(timestamp);
 
         doc.setAvailableProcessors((Integer) input.get("availableProcessors"));
         doc.setSystemCpuUsagePercent(((Number) input.get("systemCpuUsagePercent")).doubleValue());

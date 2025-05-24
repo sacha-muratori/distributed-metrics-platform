@@ -28,27 +28,32 @@ public class MetricsService {
         var errors = schemaService.validate(metric, enabledStrategies);
         if (!errors.isEmpty()) {
             log.warn("Metric validation failed: {}", errors);
-            throw new IllegalArgumentException("Invalid metric input: " + errors);
+            // Optional: send invalid line to DLQ for review/re-processing
+            // deadLetterQueueProducer.send(metric);
+        } else {
+            MetricsDocument doc = schemaService.toMetricsDocument(metric);
+            metricsRepository.save(doc);
         }
-        MetricsDocument doc = schemaService.toMetricsDocument(metric);
-        metricsRepository.save(doc);
     }
 
     public void processAggregatedMetrics(byte[] metrics) {
         List<String> enabledStrategies = getEnabledStrategies();
-
-        // Parse & validate all lines once, get raw maps + validation results
         var validatedLines = schemaService.parseAndValidateEachLine(metrics, enabledStrategies);
+
+        List<MetricsDocument> validDocs = new ArrayList<>();
         for (var line : validatedLines) {
-            if (!line.errors().isEmpty()) {
-                log.warn("Validation failed for metrics line: {}", line.errors());
-                throw new IllegalArgumentException("Invalid metric input: " + line.errors());
+            if (line.errors().isEmpty()) {
+                validDocs.add(schemaService.toMetricsDocument(line.raw()));
+            } else {
+                log.warn("Invalid metric line, skipping: {}", line.errors());
+                // Optional: send invalid line to DLQ for review/re-processing
+                // deadLetterQueueProducer.send(line.raw());
             }
         }
-        List<MetricsDocument> validDocs = schemaService.toMetricsDocumentList(metrics);
 
-        // Save all valid metrics documents to MongoDB collection
-        metricsRepository.saveAll(validDocs);
+        if (!validDocs.isEmpty()) {
+            metricsRepository.saveAll(validDocs);
+        }
     }
 
     private List<String> getEnabledStrategies() {

@@ -21,11 +21,6 @@ public class KafkaSparkMetricsConsumer {
     @KafkaListener(topics = "${spring.kafka.topics.spark}", groupId = "${spring.kafka.consumer.group-id}")
     public void consume(Map<String, Object> metric) {
         log.debug("Received spark metric from client");
-        try {
-            metricsService.processSparkMetric(metric);
-        } catch (Exception e) {
-            log.error("Error processing spark metric", e);
-            // handle error, maybe dead letter queue
-        }
+        metricsService.processSparkMetric(metric);
     }
 }

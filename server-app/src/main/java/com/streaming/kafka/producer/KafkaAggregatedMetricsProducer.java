@@ -23,15 +23,15 @@ public class KafkaAggregatedMetricsProducer {
     @Autowired
     private KafkaTemplate<String, byte[]> kafkaTemplate;
 
-    public void sendAggregatedMetricsToTopic(byte[] metrics) {
-        CompletableFuture<SendResult<String, byte[]>> future = kafkaTemplate.send(topic, metrics);
+    public CompletableFuture<SendResult<String, byte[]>> sendAggregatedMetricsToTopic(byte[] payload) {
+        CompletableFuture<SendResult<String, byte[]>> future = kafkaTemplate.send(topic, payload);
         future.whenComplete((result, ex) -> {
             if (ex != null) {
-                log.error("Failed to send aggregated metric to Kafka", ex);
-                // handle error, maybe dead letter queue
+                log.error("Failed to send aggregated metrics to Kafka", ex);
             } else {
-                log.debug("Sent aggregated metric to Kafka topic {}", topic);
+                log.debug("Sent aggregated metrics to Kafka topic {}", topic);
             }
         });
+        return future;
     }
 }

@@ -7,8 +7,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 import java.util.Map;
+
 @RestController
 @RequestMapping("/api/metrics")
 @Slf4j
@@ -22,37 +24,37 @@ public class MetricsController {
 
     // 1. Spark metrics - JSON map
     @PostMapping("/spark")
-    public ResponseEntity<Void> receiveSparkMetric(@RequestBody Map<String, Object> metric) {
-        try {
-            sparkMetricsProducer.sendSparkMetricToTopic(metric); // async fire-and-forget
-            return ResponseEntity.accepted().build(); // 202
-        } catch (Exception e) {
-            log.error("Error sending spark metric", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    public Mono<ResponseEntity<Object>> receiveSparkMetric(@RequestBody Map<String, Object> metric) {
+        return Mono.fromFuture(sparkMetricsProducer.sendSparkMetricToTopic(metric))
+                .doOnSuccess(result -> log.debug("Sent spark metric to Kafka topic"))
+                .then(Mono.just(ResponseEntity.accepted().build()))
+                .onErrorResume(e -> {
+                    log.error("Error sending spark metric", e);
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+                });
     }
 
     // 2. Aggregated metrics - raw JSON payload as bytes
     @PostMapping("/aggregated")
-    public ResponseEntity<Void> receiveAggregatedMetrics(@RequestBody byte[] payload) {
-        try {
-            aggregatedMetricsProducer.sendAggregatedMetricsToTopic(payload);
-            return ResponseEntity.accepted().build();
-        } catch (Exception e) {
-            log.error("Error sending aggregated metrics", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    public Mono<ResponseEntity<Object>> receiveAggregatedMetrics(@RequestBody byte[] payload) {
+        return Mono.fromFuture(aggregatedMetricsProducer.sendAggregatedMetricsToTopic(payload))
+                .doOnSuccess(result -> log.debug("Sent aggregated metrics to Kafka topic"))
+                .then(Mono.just(ResponseEntity.accepted().build()))
+                .onErrorResume(e -> {
+                    log.error("Error sending aggregated metrics", e);
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+                });
     }
 
     // 3. Retry batch - raw JSON payload as bytes
     @PostMapping("/retry")
-    public ResponseEntity<Void> receiveRetryBatch(@RequestBody byte[] payload) {
-        try {
-            aggregatedMetricsProducer.sendAggregatedMetricsToTopic(payload);
-            return ResponseEntity.accepted().build();
-        } catch (Exception e) {
-            log.error("Error sending retry batch", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+    public Mono<ResponseEntity<Object>> receiveRetryBatch(@RequestBody byte[] payload) {
+        return Mono.fromFuture(aggregatedMetricsProducer.sendAggregatedMetricsToTopic(payload))
+                .doOnSuccess(result -> log.debug("Sent retry batch to Kafka topic"))
+                .then(Mono.just(ResponseEntity.accepted().build()))
+                .onErrorResume(e -> {
+                    log.error("Error sending retry batch", e);
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+                });
     }
 }

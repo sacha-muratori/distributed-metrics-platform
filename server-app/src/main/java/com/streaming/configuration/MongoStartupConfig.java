@@ -34,7 +34,7 @@ public class MongoStartupConfig {
 
         // Threshold
         MetricsConfigurationDocument.Threshold threshold = new MetricsConfigurationDocument.Threshold();
-        threshold.setHighCpuPercentage(1.0);
+        threshold.setHighCpuPercentage(85.0);
         collector.setThreshold(threshold);
 
         // Spark
