@@ -1,11 +1,13 @@
 x-client-base: &client-base
   build:
-    context: ./client-app
-    dockerfile: Dockerfile
+    context: .
+    dockerfile: client-app/Dockerfile
   ports:
     - "8080:8080"  # Placeholder, override below
   environment:
-    - SERVER_URL=http://localhost:8080
+    - SERVER_URL=http://server-app:8080
+    - LOG_LEVEL=DEBUG
+    - SPRING_LOG_LEVEL=INFO
 
 services:
   kafka:
@@ -31,21 +33,23 @@ services:
       - "27017:27017"
     environment:
       MONGO_INITDB_DATABASE: distributed_metrics
-     volumes:
-       - mongo-data:/data/db
+    volumes:
+      - mongo-data:/data/db
 
   server-app:
     depends_on:
       - kafka
       - mongo
     build:
-      context: ./server-app
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: server-app/Dockerfile
     ports:
       - "8080:8080"
     environment:
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - MONGO_URI=mongodb://mongo:27017/distributed_metrics
+      - LOG_LEVEL=DEBUG
+      - SPRING_LOG_LEVEL=INFO
 
   client-app-1:
     <<: *client-base
@@ -62,3 +66,5 @@ services:
     ports:
       - "8083:8080"
 
+volumes:
+  mongo-data:

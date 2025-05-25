@@ -6,8 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
-
 /**
  * Kafka consumer that listens for Spark messages and saves them in the database
  */
@@ -18,9 +16,14 @@ public class KafkaAggregatedMetricsConsumer {
     @Autowired
     private MetricsService metricsService;
 
-    @KafkaListener(topics = "${spring.kafka.topics.aggregated}", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(
+            topics = "${spring.kafka.topics.aggregated}",
+            groupId = "${spring.kafka.consumer.group-id}",
+            containerFactory = "byteArrayKafkaListenerContainerFactory"
+    )
     public void consume(byte[] metrics) {
-        log.debug("Received aggregated metric from client");
+        log.debug("Received aggregated metrics from client");
         metricsService.processAggregatedMetrics(metrics);
     }
+
 }

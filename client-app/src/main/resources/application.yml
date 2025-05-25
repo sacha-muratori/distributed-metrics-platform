@@ -12,7 +12,7 @@ metrics:
     enabledStrategies:
       - cpu                                      # could be extended with memory, disk, hostnames new default strategies
     threshold:
-      highCpuPercentage: 1.0                     # could be extended with memory, disk, hostnames new default thresholds
+      highCpuPercentage: 85.0                    # could be extended with memory, disk, hostnames new default thresholds
     spark:
       sparkAlertUrl: "${SERVER_URL:http://localhost:8080}/api/metrics/spark"
       schedulerIntervalMs: 1000

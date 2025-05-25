@@ -7,7 +7,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Component;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -21,15 +20,16 @@ public class KafkaAggregatedMetricsProducer {
     private String topic;
 
     @Autowired
-    private KafkaTemplate<String, byte[]> kafkaTemplate;
+    private KafkaTemplate<String, byte[]> byteArrayKafkaTemplate;
 
     public CompletableFuture<SendResult<String, byte[]>> sendAggregatedMetricsToTopic(byte[] payload) {
-        CompletableFuture<SendResult<String, byte[]>> future = kafkaTemplate.send(topic, payload);
+        log.debug("Sending Aggregated metrics to Kafka topic: ", topic);
+        CompletableFuture<SendResult<String, byte[]>> future = byteArrayKafkaTemplate.send(topic, payload);
         future.whenComplete((result, ex) -> {
             if (ex != null) {
-                log.error("Failed to send aggregated metrics to Kafka", ex);
+                log.error("Failed to send aggregated metrics to Kafka topic: ", topic, ex);
             } else {
-                log.debug("Sent aggregated metrics to Kafka topic {}", topic);
+                log.debug("Successfully sent aggregated metrics to Kafka topic:", topic);
             }
         });
         return future;

@@ -19,10 +19,12 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.time.Instant;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class SchemaService {
 
@@ -35,10 +37,14 @@ public class SchemaService {
         ObjectNode schema = objectMapper.createObjectNode();
         schema.put("type", "object");
         ObjectNode properties = objectMapper.createObjectNode();
-        List<String> required = List.of("fingerprint", "clientId", "timestamp");
+
+        List<String> required = List.of("fingerprint", "timestamp");  // clientId is optional (client not registered yet)
 
         properties.putObject("fingerprint").put("type", "string");
-        properties.putObject("clientId").put("type", "string");
+
+        // Allow clientId to be string or null
+        properties.putObject("clientId").putArray("type").add("string").add("null");
+
         properties.putObject("timestamp").put("type", "string").put("format", "date-time");
 
         if (enabledStrategies.contains("cpu")) {
@@ -109,49 +115,75 @@ public class SchemaService {
 
     public MetricsDocument toMetricsDocument(Map<String, Object> input) {
         MetricsDocument doc = new MetricsDocument();
-
         if (input == null) return doc;
 
-        doc.setFingerprint((String) input.get("fingerprint"));
-        doc.setClientId((String) input.get("clientId"));
-
-        String tsString = (String) input.get("timestamp");
-        Instant timestamp = Instant.parse(tsString);
-        doc.setTimestamp(timestamp);
-
-        doc.setAvailableProcessors((Integer) input.get("availableProcessors"));
-        doc.setSystemCpuUsagePercent(((Number) input.get("systemCpuUsagePercent")).doubleValue());
-
-        doc.setUsableDiskBytes(((Number) input.get("usableDiskBytes")).longValue());
-        doc.setTotalDiskBytes(((Number) input.get("totalDiskBytes")).longValue());
-        doc.setFreeDiskBytes(((Number) input.get("freeDiskBytes")).longValue());
-
-        doc.setTotalPhysicalMemoryBytes(((Number) input.get("totalPhysicalMemoryBytes")).longValue());
-        doc.setFreePhysicalMemoryBytes(((Number) input.get("freePhysicalMemoryBytes")).longValue());
-        doc.setUsedPhysicalMemoryBytes(((Number) input.get("usedPhysicalMemoryBytes")).longValue());
-
-        doc.setHostname((String) input.get("hostname"));
-        doc.setIpaddress((String) input.get("ipaddress"));
-
-        return doc;
-    }
-
-    public List<MetricsDocument> toMetricsDocumentList(byte[] metrics) {
-        List<MetricsDocument> docs = new ArrayList<>();
-        try (ByteArrayInputStream stream = new ByteArrayInputStream(metrics);
-             JsonParser parser = new JsonFactory(objectMapper).createParser(stream)) {
-
-            while (!parser.isClosed()) {
-                JsonToken token = parser.nextToken();
-                if (token == JsonToken.START_OBJECT) {
-                    Map<String, Object> map = objectMapper.readValue(parser, new TypeReference<>() {});
-                    docs.add(toMetricsDocument(map));
-                }
-            }
-
-        } catch (IOException e) {
-            log.error("Error parsing metrics JSON lines to documents: {}", e.getMessage());
+        // fingerprint and clientId are strings, just null-check presence
+        if (input.containsKey("fingerprint")) {
+            doc.setFingerprint((String) input.get("fingerprint"));
         }
-        return docs;
+        if (input.containsKey("clientId")) {
+            doc.setClientId((String) input.get("clientId"));
+        }
+        if (input.containsKey("timestamp")) {
+            String tsString = (String) input.get("timestamp");
+            if (tsString != null) {
+                doc.setTimestamp(Instant.parse(tsString));
+            }
+        }
+        if (input.containsKey("availableProcessors")) {
+            Object val = input.get("availableProcessors");
+            if (val != null) {
+                doc.setAvailableProcessors((Integer) val);
+            }
+        }
+        if (input.containsKey("systemCpuUsagePercent")) {
+            Object val = input.get("systemCpuUsagePercent");
+            if (val != null) {
+                doc.setSystemCpuUsagePercent(((Number) val).doubleValue());
+            }
+        }
+        if (input.containsKey("usableDiskBytes")) {
+            Object val = input.get("usableDiskBytes");
+            if (val != null) {
+                doc.setUsableDiskBytes(((Number) val).longValue());
+            }
+        }
+        if (input.containsKey("totalDiskBytes")) {
+            Object val = input.get("totalDiskBytes");
+            if (val != null) {
+                doc.setTotalDiskBytes(((Number) val).longValue());
+            }
+        }
+        if (input.containsKey("freeDiskBytes")) {
+            Object val = input.get("freeDiskBytes");
+            if (val != null) {
+                doc.setFreeDiskBytes(((Number) val).longValue());
+            }
+        }
+        if (input.containsKey("totalPhysicalMemoryBytes")) {
+            Object val = input.get("totalPhysicalMemoryBytes");
+            if (val != null) {
+                doc.setTotalPhysicalMemoryBytes(((Number) val).longValue());
+            }
+        }
+        if (input.containsKey("freePhysicalMemoryBytes")) {
+            Object val = input.get("freePhysicalMemoryBytes");
+            if (val != null) {
+                doc.setFreePhysicalMemoryBytes(((Number) val).longValue());
+            }
+        }
+        if (input.containsKey("usedPhysicalMemoryBytes")) {
+            Object val = input.get("usedPhysicalMemoryBytes");
+            if (val != null) {
+                doc.setUsedPhysicalMemoryBytes(((Number) val).longValue());
+            }
+        }
+        if (input.containsKey("hostname")) {
+            doc.setHostname((String) input.get("hostname"));
+        }
+        if (input.containsKey("ipaddress")) {
+            doc.setIpaddress((String) input.get("ipaddress"));
+        }
+        return doc;
     }
 }

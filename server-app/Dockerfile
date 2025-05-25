@@ -1,14 +1,20 @@
-#
-# Build stage
-#
+# ---- Build Stage ----
 FROM maven:3.8.7-openjdk-18-slim AS build
-COPY src /home/app/src
-COPY pom.xml /home/app
-RUN mvn -f /home/app/pom.xml clean package -DskipTests
 
-#
-# Package stage
-#
+WORKDIR /build
+
+# Copy the entire project to preserve parent POM structure
+COPY . .
+
+# Build only the client module
+RUN mvn -pl server-app -am clean package -DskipTests
+
+# ---- Runtime Stage ----
 FROM eclipse-temurin:18-jdk-alpine
-COPY --from=build /home/app/target/*.jar app.jar
-ENTRYPOINT ["java","-jar","app.jar"]
+
+WORKDIR /app
+
+# Copy only the final jar from the correct module
+COPY --from=build /build/server-app/target/*.jar app.jar
+
+ENTRYPOINT ["java", "-jar", "app.jar"]

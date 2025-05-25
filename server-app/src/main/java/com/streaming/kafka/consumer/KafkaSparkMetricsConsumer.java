@@ -18,7 +18,11 @@ public class KafkaSparkMetricsConsumer {
     @Autowired
     private MetricsService metricsService;
 
-    @KafkaListener(topics = "${spring.kafka.topics.spark}", groupId = "${spring.kafka.consumer.group-id}")
+    @KafkaListener(
+            topics = "${spring.kafka.topics.spark}",
+            groupId = "${spring.kafka.consumer.group-id}",
+            containerFactory = "jsonKafkaListenerContainerFactory"
+    )
     public void consume(Map<String, Object> metric) {
         log.debug("Received spark metric from client");
         metricsService.processSparkMetric(metric);

@@ -1,5 +1,8 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
+    <Properties>
+        <Property name="logLevel">${env:LOG_LEVEL:-INFO}</Property>  <!-- default to info -->
+        <Property name="springLogLevel">${env:SPRING_LOG_LEVEL:-INFO}</Property>  <!-- default to info -->
+    </Properties>
 
     <!-- Appenders -->
     <Appenders>
@@ -17,22 +20,21 @@
     <!-- Loggers -->
     <Loggers>
         <!-- Logger for com.streaming package -->
-        <Logger name="com.streaming" level="DEBUG" additivity="false">
+        <Logger name="com.streaming" level="${logLevel}" additivity="false">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Logger>
 
         <!-- Spring-related loggers -->
-        <Logger name="org.springframework" level="INFO" additivity="false">
+        <Logger name="org.springframework" level="${springLogLevel}" additivity="false">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Logger>
 
         <!-- Root logger configuration (Default log level and appender) -->
-        <Root level="DEBUG">
+        <Root level="${springLogLevel}">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="File"/>
         </Root>
     </Loggers>
-
 </Configuration>
