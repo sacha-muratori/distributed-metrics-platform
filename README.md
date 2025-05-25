@@ -57,22 +57,42 @@ This command will start 3 Clients (for testing purposes) and the Server applicat
 
 ## Usage
 
-### 1. Access the Server API
+### Metrics Query Endpoints (REST API)
 
-Once the services are running, you can access the server's REST API metrics with queries like:
+These endpoints are part of the `/api/metrics` controller. They return CPU usage metrics from clients.
+More endpoints can be made available when needed.
 
-```
-http://localhost:8080/api/metrics/today
-```
+#### Endpoints Summary
 
-This endpoint will return the latest CPU metrics collected by the client application for today.
+##### 1. GET `/api/metrics/today`
+- **Description**: Returns today’s metrics.
+- **Optional Param**: `clientId`
 
+##### 2. GET `/api/metrics/day`
+- **Description**: Returns metrics for a given day.
+- **Params**:
+  - `day` (e.g., `2025-05-24`)
+  - `clientId` (optional)
+
+##### 3. GET `/api/metrics/past-hour`
+- **Description**: Returns metrics from the past hour.
+- **Optional Param**: `clientId`
+
+##### 4. GET `/api/metrics/range`
+- **Description**: Returns metrics between two times on a given day.
+- **Params**:
+  - `day` (e.g., `2025-05-24`)
+  - `from` (e.g., `14:30`)
+  - `to` (e.g., `16:45`)
+  - `clientId` (optional)
+
+You can query the data after few minutes by using Postman, or performing a curl to localhost.
 
 ## Notes
 
 - The client application collects CPU metrics at regular intervals. You can configure the interval by modifying the `application.properties` file in the `client-app` directory OR by modifying the contents present in the `metrics_policy` collection document in the MongoDB.
 - The client application collects the metrics configuration from the server, like the scheduled intervals times and the type of metrics.
-- The server application processes and exposes the collected metrics through a REST API. You can extend this application to include additional endpoints for querying different types of metrics or to store the metrics in a database for historical analysis.
+- The server application processes and exposes the collected metrics through a REST API. You can extend this application to include additional endpoints for querying different types of metrics.
 - Both applications are containerized using Docker, allowing for easy deployment and scalability. You can deploy these applications to any environment that supports Docker.
 
 ## Future Improvements
